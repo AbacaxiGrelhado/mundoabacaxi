@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cidades — Interativas</title>
+<style>
+  body {
+    margin: 0;
+    background: #0f1724;
+    color: #e6eef8;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  .gallery {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px;
+  }
+
+  .card {
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .city-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #6ee7b7;
+    margin-bottom: 8px;
+  }
+
+  .city-sub {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: rgba(230, 238, 248, 0.9);
+  }
+
+  .thumb img {
+    width: 400px;
+    height: 470px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease;
+  }
+
+  .thumb img:hover {
+    transform: scale(1.03);
+  }
+
+  .cooldown {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: red;
+    color: black;
+    font-weight: bold;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-content {
+    background: #1a2436;
+    border-radius: 15px;
+    padding: 20px 30px;
+    text-align: center;
+    width: 600px;
+    max-width: 90%;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  }
+
+  .modal img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    margin-bottom: 20px;
+  }
+
+  .options button {
+    display: block;
+    width: 100%;
+    margin: 6px 0;
+    padding: 10px;
+    background: #24344f;
+    color: #e6eef8;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 15px;
+  }
+
+  .options button:hover {
+    background: #2e4a6d;
+  }
+
+  .close {
+    margin-top: 15px;
+    background: #6e1111 !important;
+  }
+
+  .curiosity, .socialize, .sidequest {
+    margin-top: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    color: #cfe7ff;
+    text-align: left;
+    min-height: 60px;
+    white-space: pre-wrap;
+  }
+
+  .counters {
+    margin-top: 20px;
+    display: flex;
+    gap: 40px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <div class="gallery">
+    <div class="card" id="eldor-card" onclick="openModal('eldor')">
+      <div class="city-title">Eldor</div>
+      <div class="city-sub">Cidade Antiga de Eldor</div>
+      <div class="thumb">
+        <img src="img/eldor.png" alt="Cidade Antiga de Eldor">
+      </div>
+      <div class="cooldown" id="eldor-cd"></div>
+    </div>
+
+    <div class="card" id="pequenaraiz-card" onclick="openModal('pequenaraiz')">
+      <div class="city-title">PequenaRaiz</div>
+      <div class="city-sub">Nova Pequena Raiz</div>
+      <div class="thumb">
+        <img src="img/pequenaraiz.png" alt="Nova Pequena Raiz">
+      </div>
+      <div class="cooldown" id="pequenaraiz-cd"></div>
+    </div>
+
+    <div class="card" id="penapedra-card" onclick="openModal('penapedra')">
+      <div class="city-title">Penapedra</div>
+      <div class="city-sub">Penapedra</div>
+      <div class="thumb">
+        <img src="img/penapedra.png" alt="Penapedra">
+      </div>
+      <div class="cooldown" id="penapedra-cd"></div>
+    </div>
+
+    <div class="card" id="seivara-card" onclick="openModal('seivara')">
+      <div class="city-title">Seivará</div>
+      <div class="city-sub">Floresta Viva de Seivará</div>
+      <div class="thumb">
+        <img src="img/seivará.png" alt="Floresta Viva de Seivará">
+      </div>
+      <div class="cooldown" id="seivara-cd"></div>
+    </div>
+  </div>
+
+  <!-- Contadores -->
+  <div class="counters">
+    <div>POPULARIDADE: <span id="popularity">0</span></div>
+    <div>CONHECIMENTO: <span id="knowledge">0</span></div>
+    <div>CONFIANÇA: <span id="trust">0</span></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+<script>
+const modal = document.getElementById("modal");
+const modalContent = document.getElementById("modal-content");
+
+// Contadores e cooldown
+let counters = JSON.parse(localStorage.getItem('counters')) || {popularity:0, knowledge:0, trust:0};
+let cooldowns = JSON.parse(localStorage.getItem('cooldowns')) || {eldor:0, pequenaraiz:0, penapedra:0, seivara:0};
+updateCounters();
+updateCooldowns();
+
+// Funções modal
+function openModal(city) {
+  const now = Date.now();
+  if(cooldowns[city] > now){
+    alert(`Cidade em cooldown! Aguarde ${Math.ceil((cooldowns[city]-now)/60000)} minutos.`);
+    return;
+  }
+
+  let img = "";
+  let text = "";
+  let options = ["Sobre a cidade","Sidequest","Socializar","Apenas de passagem!"];
+
+  switch(city){
+    case "eldor": img="img/Rodle.png"; text="Bem vindo à antiga cidade de Eldor. O que lhe traz aqui hoje?"; break;
+    case "pequenaraiz": img="img/Ellie.png"; text="Bem vindo à cidade de Pequena Raiz. O que lhe traz aqui hoje?"; break;
+    case "penapedra": img="img/Luke.png"; text="Bem vindo à quente cidade de Penapedra. O que lhe traz aqui hoje, forasteiro?"; break;
+    case "seivara": img="img/Kiya.png"; text="Bem vindo à cheirosa cidade de Seivará. O que lhe traz aqui hoje?"; break;
+  }
+
+  modalContent.innerHTML = `
+    <img src="${img}" alt="${city}">
+    <p>${text}</p>
+    <div class="options">
+      ${options.map((opt,i)=>`<button onclick="handleOption('${city}', ${i+1})">${opt}</button>`).join('')}
+    </div>
+  `;
+  modal.style.display = "flex";
+}
+
+function handleOption(city, option){
+  if(option===1) { showCuriosity(city); addCounters('knowledge', city); setCooldown(city);}
+  else if(option===2) { showSidequest(city); addCounters('trust', city); setCooldown(city);}
+  else if(option===3) { showSocialize(city); addCounters('popularity', city); setCooldown(city);}
+  else if(option===4) { closeModal();}
+}
+
+function closeModal(){ modal.style.display="none";}
+modal.onclick = (e)=>{if(e.target===modal) closeModal();}
+
+// Curiosidade
+function showCuriosity(city){
+  const curiosities = {
+    eldor: ["Eldor já foi o centro espiritual do continente, antes de ser engolida pela névoa.","Os sinos de Eldor tocam sozinhos em dias de névoa densa.","Monges de Eldor dizem que as ruínas mudam de lugar durante a noite.","Crianças da cidade são treinadas desde cedo em leitura de runas antigas.","Os anciões de Eldor são consultados por reis e viajantes em busca de sabedoria.","Há um lago subterrâneo em Eldor, onde dizem viver um Onix de Cristal.","As bibliotecas de Eldor contêm livros escritos em línguas esquecidas. Mesmo após milênios, ainda terão linguagens que nunca serão decifradas.","A população idosa é alta, mas dizem que em Eldor ninguém realmente envelhece, apenas fica mais sábio.","Algumas casas foram construídas sobre templos antigos e misteriosos, por isso são ditas por carregarem espíritos.","O ar de Eldor tem cheiro de incenso e chuva antiga, alguns gostam, outros detestam.","Reza a lenda que o primeiro pokémon de PEDRA nasceu em Eldor.","As ruas são desenhadas para formar símbolos sagrados quando vistas do alto.","Em certas noites, luzes azuis dançam sobre os telhados da cidade, há alguns que dizem terem visto um pokémon misterioso fazer isso.","A cada geração, nasce uma criança com olhos da cor da névoa, essa criança sempre deve portar um lucario.","Os pergaminhos mais antigos mencionam Eldor como O Berço de Arceus.","Um antigo sino no topo do monte ecoa por dias quando tocado, mas seu som é baixo e só pode ser escutado em suas proximidades.","Monges afirmam que as pedras da cidade já foram pokémon um dia.","Há jardins escondidos onde pokémon de cores diferentes se reunem uma vez por ano.","As crianças dizem ver silhuetas de pokémon antigos nas janelas ao anoitecer.","Eldor nunca dorme completamente, há sempre alguém acordado."],
+    pequenaraiz: ["Pequena Raiz é o primeiro ponto onde o sol toca toda manhã.","As ruas são repletas de flores cultivadas pelos moradores, flabébé são os pokémon mais comum por aqui.","É famosa por suas feiras de frutas e conversas de varanda, a fruta mais vendida é, sem dúvidas, o abacaxi.","Os viajantes dizem que dormir aqui cura o cansaço da alma, provavelmente pelo siêncio e paz que ressoa nessa cidade.","Há uma árvore centenária que nunca perdeu uma folha sequer. Os antigos acreditam que essa árvore é na verdade um pokémon adormecido.","O vento de manhã sempre sopra do leste, dizem que é um bom presságio.","Moradores costumam deixar chás prontos em janelas para qualquer visitante que estiver com sede.","O som dos pokémon é tão constante que virou trilha sonora da cidade.","Nossa população é pequena, é mais uma cidade de visitantes do que um local de moradia.","Quem chega a Pequena Raiz, raramente parte com pressa.","Os jardins são cuidados por voluntários desde a fundação da cidade, os pokémon nos judam bastante nisso também.","O pôr do sol reflete nas janelas como se o vidro fosse dourado.","Em noites frias, o aroma de pão fresco toma conta das ruas.","A praça central tem uma fonte que nunca secou, mesmo em secas antigas. Ninguém ousa mexer na fonte para saber como ela funciona.","Os moradores acreditam que o solo da cidade traz sorte para plantações, por isso as colheitas sãos sempre fartas.","Toda primavera, as crianças decoram as portas com pétalas coloridas e espalham lótus pela cidade. Chamamos esse evento de FESTIVAL DAS FLORES.","Há uma colina onde é possível ouvir o mar, mesmo sem vê-lo.","O som dos sinos marca não a hora, mas o início das colheitas.","Alguns viajantes afirmam que o tempo parece passar mais devagar ali.","Quem parte de Pequena Raiz, sempre leva um pouco dela no coração. É nosso lema!"],
+    penapedra: ["Penapedra é conhecida por seu calor intenso e corações resistentes.","Suas minas produzem cristais usados em tecnologia de ponta.","Os ferreiros locais entendem tanto de ferragem quanto de design.","Há rumores de que o solo da cidade brilha à noite.","Muitos chamam Penapedra de Paraíso de Vidro.","O mercado de metais nunca fecha, nem durante tempestades.","Alguns mineiros dizem ouvir vozes antigas dentro das cavernas.","Toda nova invenção da região costuma nascer em Penapedra.","Os prédios são feitos com uma mistura de pedra e vidro especial.","Dizem que os habitantes têm sangue quente... E o temperamento também.","Durante o solstício, as rochas locais brilham como brasas. É possível coletar muitas FIRE STONES nessa época.","Os aprendizes de forja tem uma vitalidade invejável, é dito que eles precisam dormir apenas por três horas!","As lâmpadas da cidade são movidas por cristais energéticos locais. As vezes pokémon elétricos aparecem comendo esses cristais.","Os mineiros contam histórias de pokémon que moldam os metais por vontade própria.","O calor é tão constante que os moradores dizem sentir frio aos 25 graus.","Alguns inventores dormem nas oficinas para não perder inspiração.","As ruas ecoam o som das bigornas desde o amanhecer até o entardecer.","Há uma pirâmide feita inteiramente de vidro temperado, símbolo do progresso e da nossa cidade, chamamos ela de ESCADAS DO SOL.","O chão da cidade vibra levemente quando os magcargos despertam.","Mesmo o vento em Penapedra sopra quente e cheira a ferro fundido."],
+    seivara: ["Seivará é famosa por seus doces de mel e seiva dourada. Heracross é um dos pokémon mais comum por essa região!","As árvores da cidade produzem luz própria à noite devido a seiva brilhante que secreta de suas folhas.","Os moradores acreditam que cada árvore tem uma alma, por isso, arrancar uma árvore em Seivará é um pecado.","Nunca escurece totalmente, há sempre um brilho dourado no ar.","O aroma das flores é tão forte que atrai viajantes de longe, tornando a cidade um ponto turístico.","As Beedrill de Seivará são tratadas como cidadãs honorárias.","As crianças aprendem a colher seiva antes mesmo de ler, não por obrigação, mas por costume.","Há uma colina onde o pôr do sol dura o dobro do tempo comum, e um local perfeito para um encontro romântico.","Seivará é a maior exportadora de doces naturais da região, você deveria provar algum qualquer dia!","Os visitantes costumam dizer que o ar tem gosto de mel.","Durante o outono, o chão se cobre de folhas douradas que não apodrecem, é muito bonito, mas o trabalho para limpar tudo é enorme.","Os moradores dizem que o vento carrega canções antigas das florestas e que pokémon são atraídos por essas canções.","As colmeias locais são protegidas por tradições sagradas, mexer em uma pode ser considerado um grande crime.","Nenhum viajante passa por Seivará sem provar o mel de cristal.","As noites são banhadas por luz dourada, mesmo sob nuvens pesadas. Alguns idosos costumam dizer que as noites na nossa cidade são as mais belas do mundo.","Os troncos das árvores exalam um perfume adocicado após a chuva atraindo muito Pokémon inseto.","Muitos casais visitam a cidade em busca de bênçãos para o amor.","Há uma ponte viva feita inteiramente de galhos trançados, um dia, essa ponte queimou intensamente com o cair de um raio, mas ela sobreviveu e resiste até hoje!","Temos um mel especial feito de suco de abacaxi.","Dizem que quem dorme sob as árvores de Seivará sonha com o passado."]
+  };
+  const randomCuriosity = curiosities[city][Math.floor(Math.random() * curiosities[city].length)];
+  displayText(randomCuriosity, 'curiosity');
+}
+
+// Socializar
+function showSocialize(city){
+  const socializePhrases = {
+    eldor: ["Você ajuda um monge a organizar pergaminhos antigos.","Você aprende runas com uma criança prodígio.","Você compartilha histórias sobre as ruínas com um viajante.","Você acende velas em um antigo templo com moradores locais.","Você observa o sino da cidade tocar sozinho ao anoitecer.","Você participa de uma cerimônia com os anciões da cidade.","Você ajuda a guiar turistas perdidos entre as ruínas.","Você encontra um guardião de cristal no lago subterrâneo.","Você desenha símbolos sagrados nas ruas junto de crianças locais.","Você escuta lendas sobre o primeiro mestre dos ventos."],
+    pequenaraiz: ["Você ajuda uma idosa a colher flores na praça.","Você passa um tempo conversando com uma bela moça.","Você prova chás com os moradores da cidade.","Você participa de uma feira de frutas com os comerciantes locais.","Você ensina crianças a plantar sementes no jardim.","Você ajuda a organizar a decoração de primavera nas portas.","Você escuta histórias antigas com os moradores da praça central.","Você observa o pôr do sol refletindo nas janelas douradas.","Você acompanha um viajante a conhecer a colina do mar.","Você ajuda a alimentar pequenos pokémon que vivem na cidade."],
+    penapedra: ["Você ajuda um ferreiro a polir cristais para iluminação.","Você conversa com inventores sobre novas engenhocas.","Você acompanha mineiros explorando cavernas de cristal.","Você observa o solstício e o brilho das rochas locais.","Você participa de um mercado de metais com comerciantes locais.","Você ajuda a transportar cristais para a pirâmide de vidro.","Você assiste a aprendizes de forja testando suas habilidades.","Você explora os sons das bigornas ao amanhecer.","Você aprende sobre pokémon que moldam os metais.","Você ajuda a manter as ruas e edifícios brilhando sob o sol intenso."],
+    seivara: ["Você ajuda crianças a colher seiva dourada das árvores.","Você prova doces naturais feitos pelos moradores.","Você observa as árvores emitindo luz própria à noite.","Você participa de canções antigas transmitidas pelo vento.","Você ajuda a cuidar das colmeias protegidas por tradições.","Você ensina visitantes a apreciar o mel de cristal.","Você passeia pela ponte viva de galhos trançados.","Você acompanha casais em busca de bênçãos amorosas.","Você aprende a usar seiva como tinta dourada em rituais.","Você explora os perfumes adocicados das árvores após a chuva."]
+  };
+  const randomPhrase = socializePhrases[city][Math.floor(Math.random() * socializePhrases[city].length)];
+  displayText(randomPhrase,'socialize');
+}
+
+// Sidequests
+function showSidequest(city){
+  const sidequests = [
+    "Você está conversando com um jovem quando o mesmo repentinamente te desafia a uma rodada de \"Kleavor, Scyther, Scizor\" - Consiga uma Win Streak de 7 pontos ou mais nesse jogo para completar a missão.\nRecompensa: 500 Chatcoins",
+    "Uma moradora pretende fazer um bolo para seu filho, mas está sem berries - Consiga 5 berries no CAMPEONATO DE PESCA e traga para a moça! (Você pode jogar de graça para completar essa missão)\nRecompensa: 200 Chatcoins",
+    "Um fanático por batalhas está procurando um treinador promissor. - Vença qualquer outro treinador em uma batalha 2v2\nRecompensa: 3 Mega Shard / 1 Ovo raro",
+    "Um fanático por batalhas está procurando um treinador que busque se desafiar. - Vença qualquer outro treinador em uma batalha 2v1. Você pode usar apenas um pokémon para vencer dos dois de seu inimigo!\nRecompensa: 5 Mega Shard / 2 Ovo raro",
+    "Um velho roceiro está com dificuldades de trazer nutrientes para sua terra. - Pegue e entregue para o idoso um pokémon do tipo água qualquer.\nRecompensa: 600 Chatcoins / 8 Rare Candy",
+    "Os pães não irão assar corretamente, a menos que... - Pegue e entregue para o padeiro um pokémon do tipo fogo qualquer.\nRecompensa: 600 Chatcoins / 8 Rare Candy",
+    "Precisamos de folhas mágicas para fazer um novo remédio importante! - Pegue e entregue ao curandeiro um pokémon do tipo grama qualquer.\nRecompensa: 600 Chatcoins / 8 Rare Candy",
+    "Um apostador chega a cidade carregando várias pokébolas, ele parece estar atrás de um desafio! - Vença duas random battle no showdown!\nRecompensa: 1 Pokémon do time utilizado (Exceto lendários)",
+    "Um cartaz é colocado na cidade procurando o POKÉMON VOLTORB! - Consiga o pokémon pedido e entregue ao requisitador do aviso! (O pokémon dessa missão muda todo dia)\nRecompensa: 1000 Chatcoins / 2 Mega Shard",
+    "O mestre da cidade deseja lhe desafiar - Vença do mestre da cidade em uma batalha 3v3!\nRecompensa: 1 Ovo lendário! / 5 Mega Shards",
+    "Um cartaz é colocado na cidade procurando o POKÉMON SMOLIV! - Consiga o pokémon pedido e entregue ao requisitador do aviso! (O pokémon dessa missão muda todo dia)\nRecompensa: 1000 Chatcoins / 2 Mega Shard"
+  ];
+  const quest = sidequests[Math.floor(Math.random()*sidequests.length)];
+  displayText(quest,'sidequest');
+}
+
+// Exibir com efeito typewriter
+function displayText(text,className){
+  const optionsDiv = modalContent.querySelector(".options");
+  optionsDiv.style.display="none";
+
+  const div = document.createElement("div");
+  div.className=className;
+  modalContent.appendChild(div);
+
+  let i=0;
+  function typeWriter(){
+    if(i<text.length){
+      div.innerHTML+=text.charAt(i);
+      i++;
+      setTimeout(typeWriter,35);
+    }else{
+      const closeBtn=document.createElement("button");
+      closeBtn.className="close";
+      closeBtn.textContent="Fechar";
+      closeBtn.onclick=closeModal;
+      modalContent.appendChild(closeBtn);
+    }
+  }
+  typeWriter();
+}
+
+// Contadores
+function addCounters(type,city){
+  switch(type){
+    case 'knowledge':
+      if(city==='eldor') counters.knowledge+=5;
+      if(city==='pequenaraiz') counters.knowledge+=2;
+      if(city==='penapedra') counters.knowledge+=4;
+      if(city==='seivara') counters.knowledge+=3;
+      break;
+    case 'popularity':
+      if(city==='eldor') counters.popularity+=2;
+      if(city==='pequenaraiz') counters.popularity+=5;
+      if(city==='penapedra') counters.popularity+=3;
+      if(city==='seivara') counters.popularity+=4;
+      break;
+    case 'trust':
+      if(city==='eldor') counters.trust+=3;
+      if(city==='pequenaraiz') counters.trust+=4;
+      if(city==='penapedra') counters.trust+=3;
+      if(city==='seivara') counters.trust+=5;
+      break;
+  }
+  localStorage.setItem('counters',JSON.stringify(counters));
+  updateCounters();
+}
+
+function updateCounters(){
+  document.getElementById('popularity').textContent=counters.popularity;
+  document.getElementById('knowledge').textContent=counters.knowledge;
+  document.getElementById('trust').textContent=counters.trust;
+}
+
+// Cooldown
+function setCooldown(city){
+  const now=Date.now();
+  cooldowns[city]=now+15*60*1000;
+  localStorage.setItem('cooldowns',JSON.stringify(cooldowns));
+  updateCooldowns();
+}
+
+function updateCooldowns(){
+  for(const city in cooldowns){
+    const cdDiv=document.getElementById(`${city}-cd`);
+    const remaining = cooldowns[city]-Date.now();
+    if(remaining>0){
+      cdDiv.textContent=formatTime(remaining);
+      const interval = setInterval(()=>{
+        const rem=cooldowns[city]-Date.now();
+        if(rem<=0){
+          cdDiv.textContent="";
+          clearInterval(interval);
+        }else{
+          cdDiv.textContent=formatTime(rem);
+        }
+      },1000);
+    }else{
+      cdDiv.textContent="";
+    }
+  }
+}
+
+function formatTime(ms){
+  const min=Math.floor(ms/60000);
+  const sec=Math.floor((ms%60000)/1000);
+  return `${min}:${sec<10?'0'+sec:sec}`;
+}
+</script>
+</body>
+</html>
