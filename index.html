@@ -350,7 +350,7 @@ function updateCounters(){
 // Cooldown
 function setCooldown(city){
   const now=Date.now();
-  cooldowns[city]=now+15*60*1000;
+  cooldowns[city]=now+25*60*1000;
   localStorage.setItem('cooldowns',JSON.stringify(cooldowns));
   updateCooldowns();
 }
@@ -384,3 +384,4 @@ function formatTime(ms){
 </script>
 </body>
 </html>
+
